@@ -6,50 +6,141 @@ output: html_document
 runtime: shiny
 ---
 
-This R Markdown document is made interactive using Shiny. Unlike the more traditional workflow of creating static reports, you can now create documents that allow your readers to change the assumptions underlying your analysis and see the results immediately. 
 
-To learn more, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
+## 1 - Rappel sur les fonctions
 
-## Inputs and Outputs
 
-You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change.  This demonstrates how a standard R plot can be made interactive by wrapping it in the Shiny `renderPlot` function. The `selectInput` and `sliderInput` functions create the input widgets used to drive the plot.
+## 2 - Exploration basique des données
 
-```{r, echo=FALSE}
+### Quelle distributions pour les variables ?
+
+```{r}
+load("data/eurosex.RData")
+```
+
+
+```{r, fig.show='asis', fig.width=3, fig.height = 3}
+hist(eurosex$THREEBED)
+
+hist(eurosex$ONENIGHT)
+
+hist(eurosex$WISHMORE)
+
+hist(eurosex$FREQYEAR)
+
+hist(eurosex$VIBRATOR)
+
+hist(eurosex$FIRSTSEX)
+```
+
+Et si on veut changer l'intervalle des barres ?
+
+```{r, fig.show = "hold", fig.width=3}
+hist(eurosex$THREEBED, breaks = 10)
+hist(eurosex$ONENIGHT, breaks = 10)
+hist(eurosex$WISHMORE, breaks = 10)
+```
+
+C'est long...
+
+
+
+## 3 - Histogramme interactif avec manipulate
+
+```{r, eval=FALSE}
+library(manipulate)
+manipulate(hist(x = eurosex[[myVar]], breaks = nbBreaks),
+           nbBreaks = slider(min = 2, max = 20),
+           myVar = picker("THREEBED", "ONENIGHT", "WISHMORE", "FREQYEAR", "VIBRATOR", "FIRSTSEX"))
+```
+
+Limites : ne fonctionne que dans RStudio, et ne peut être "partagé".
+
+## 4 - Histogramme interactif avec shiny
+
+Pour des applications plus dynamiques
+
+```{r}
 inputPanel(
-  selectInput("n_breaks", label = "Number of bins:",
-              choices = c(10, 20, 35, 50), selected = 20),
-  
-  sliderInput("bw_adjust", label = "Bandwidth adjustment:",
-              min = 0.2, max = 2, value = 1, step = 0.2)
-)
+  selectInput(inputId = "variable", label = "Variable à décrire", choices = colnames(eurosex)),
+  sliderInput(inputId = "nbbreaks", label = "Nombre de barres", min = 2, max = 20, value = 5)
+  )
+
 
 renderPlot({
-  hist(faithful$eruptions, probability = TRUE, breaks = as.numeric(input$n_breaks),
-       xlab = "Duration (minutes)", main = "Geyser eruption duration")
-  
-  dens <- density(faithful$eruptions, adjust = input$bw_adjust)
-  lines(dens, col = "blue")
+  hist(x = eurosex[[input$variable]], breaks = input$nbbreaks)
 })
 ```
 
-## Embedded Application
 
-It's also possible to embed an entire Shiny application within an R Markdown document using the `shinyAppDir` function. This example embeds a Shiny application located in another directory:
+## 4 - Application géographique : CAH interactive avec Shiny
 
-```{r, echo=FALSE}
-shinyAppDir(
-  system.file("examples/06_tabsets", package="shiny"),
-  options=list(
-    width="100%", height=550
+Il faut :
+
+* Un dendrogramme
+* Les profils de classe
+* Une carte
+
+Paramètres dynamiques : 
+
+* Choix des variables à utiliser
+* Nombre de classe
+
+
+```{r, fig.show='hold', echo=FALSE, fig.width = 3}
+row.names(eurosex) <- eurosex$COUNTRYID
+
+inputPanel(
+  selectInput(inputId = "variables", label = "Variables à mobiliser", choices = colnames(eurosex), multiple = TRUE),
+  sliderInput(inputId = "nbClusters", label = "Nombre de classes", min = 2, max = 10, value = 3)
   )
-)
+
+cah <- reactive({
+  hclust(d = dist(subset(eurosex, select = input$variables), method = "euclidean"), method = "ward.D2")
+})
+
+clusters <- reactive({
+  cutree(tree = cah(), k = input$nbClusters)
+})
+# Dendrogramme
+renderPlot({
+  plot(cah(), hang = -1)
+})
+
+library(ggplot2)
+library(reshape2)
+plotProfiles <- function(data, clusters){
+  nClusters <- length(unique(clusters))
+  cPal <- rainbow(n = nClusters)
+  data$CLUSTER <- factor(clusters, levels = 1:nClusters, labels = paste('Cluster', 1:nClusters, sep = " "))
+  plotDF <- subset(data, select = -CLUSTER)
+  clusProfile <- aggregate(plotDF,
+                           by = list(data$CLUSTER),
+                           mean)
+  colnames(clusProfile)[1] <- "CLUSTER"
+  clusLong <- melt(clusProfile, id.vars = "CLUSTER")
+  ggplot(clusLong) +
+    geom_bar(aes(x = variable, y = value, fill = CLUSTER),
+             stat = "identity") +
+    scale_fill_manual(values = cPal) +
+    facet_wrap(~ CLUSTER) +
+    coord_flip() + theme_bw()
+  }
+
+# Profils
+renderPlot({
+  plotProfiles(subset(eurosex, select = input$variables), clusters())
+})
+
+# Carte
+renderPlot({
+  cPal <- rainbow(n = input$nbClusters)
+  countryColors <- cPal[clusters()] 
+  plot(euromap, col = countryColors)
+})
+
 ```
 
-Note the use of the `height` parameter to determine how much vertical space the embedded application should occupy.
 
-You can also use the `shinyApp` function to define an application inline rather then in an external directory.
-
-In all of R code chunks above the `echo = FALSE` attribute is used. This is to prevent the R code within the chunk from rendering in the document alongside the Shiny components.
-
-
+## 5 - Créer une application interactive
 
