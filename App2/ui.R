@@ -17,31 +17,31 @@ shinyUI(fluidPage(
   # Sidebar
   sidebarLayout(
     sidebarPanel(
-      selectInput(inputId = "xCol", label = "Variable X", 
-                  selectize = TRUE, multiple = FALSE,
-                  choices = colnames(iris), selected = colnames(iris)[1]),
-      selectInput(inputId = "yCol", label = "Variable Y", 
-                  selectize = TRUE, multiple = FALSE,
-                  choices = colnames(iris), selected = colnames(iris)[2]),
+      selectInput(inputId = "variables", label = "Variables", 
+                  selectize = TRUE, multiple = TRUE,
+                  choices = colnames(eurosex)),
       selectInput(inputId = "typeDist",
                   label = "Type de distance",
                   selectize = TRUE,
                   multiple = FALSE,
                   choices = c("Euclidienne" = "euclidean", "Manhattan" = "manhattan")),
-      selectInput(inputId = "typeCrit",
-                  label = "Critère d'agrégation",
-                  selectize = TRUE,
-                  multiple = FALSE,
-                  choices = c("Min" = "single", 
-                              "Max" = "complete", 
-                              "Moyenne" = "average", 
-                              "Barycentres" = "weighted", 
-                              "Ward" = "ward")),
-      sliderInput(inputId = "nbClus",
+      sliderInput(inputId = "nbClasses",
                   label = "Nombre de classes",
                   min = 1,
                   max = 12,
-                  value = 4)
+                  value = 4),
+      hr(),
+      h3("Exercice"),
+      tags$ol(
+        tags$li("Ajouter un paramètre pour modifier le critère d'agrégation"),
+        tags$li("Ajouter un paramètre permettant de standardiser les variables
+                avant d'effectuer la CAH"),
+        tags$li("Trouver une méthode pour que la CAH ne se calcule
+                pas s'il n'y a pas au moins 2 variables de sélectionnées"),
+        tags$li("La CAH est redécoupée pour chacun des graphiques :
+                trouver un moyen pour que cette opération (cutree) ne soit réalisée
+                que quand il y a un changement dans les variables/le nombre de classe")
+      )
     ),
     
     # Show a plot of the generated distribution
@@ -49,11 +49,19 @@ shinyUI(fluidPage(
       tabsetPanel(
         tabPanel(title = "Graphiques",
                  icon = icon(name = "pencil-square-o"),
-                 plotOutput("plotxy"),
-                 plotOutput("plottree")),
+                 plotOutput("graphiqueBase"),
+                 plotOutput("dendrogramme")),
+        tabPanel(title = "Carte & Profils",
+                 icon = icon(name = "picture-o"),
+                 fluidRow(
+                   column(6, plotOutput("carteCAH")),
+                   column(6, plotOutput("profilsCAH"))
+                   )
+        ),
         tabPanel(title = "Tableaux", 
                  icon = icon(name = "table"),
-                 dataTableOutput("userdata"))
+                 dataTableOutput("tableau"))
+
       )
     )
   )
