@@ -1,34 +1,40 @@
-##############################  
-#### Shiny User interface ####
-##############################
+#################
+### Commandes ###
+### générales ###
+#################
 
-# Load packages ----
+library(shiny)
 
-require(shiny)
+### On charge les données ###
+load("data/eurosex.RData")
 
-
-# Shiny server
+##################
+### Machinerie ###
+##################
 
 server <- function(input, output) {
   output$plothist <- renderPlot({
-    hist(x = iris$Sepal.Length, 
+    hist(x = eurosex$FREQYEAR, # La variable
          col = input$fillcol, 
          border = input$bordercol, 
-         breaks = input$nbbins,
+         breaks = 5,
           
-         main = "Distribution de la longueur des sépales",
-         xlab = "Longueur des sépales",
+         main = "Distribution de la fréquence moyenne des rapports",
+         xlab = "Nombre moyen de rapports / an",
          ylab = "Fréquence")
   })
 }
 
-# Shiny ui ----
+#################
+### Interface ###
+## Utilisateur ##
+#################
 
 ui <- fluidPage(
-  # Application title
+  # Titre de l'application
   titlePanel("Avec shiny, personnalise ton histogramme !"),
   
-  # Sidebar
+  # Panneau latéral de contrôle
   sidebarLayout(
     sidebarPanel(
       selectInput(inputId = "fillcol", label = "Choisis la couleur de remplissage", 
@@ -36,19 +42,25 @@ ui <- fluidPage(
                   choices = c("black", "grey", "blue", "orange", "red")),
       selectInput(inputId = "bordercol", label = "Choisis la couleur de bordure", 
                   selectize = TRUE, multiple = FALSE,
-                  choices = c("black", "grey", "blue", "orange", "red")),
-      sliderInput(inputId = "nbbins",
-                  label = "Choisis le nombre de barres",
-                  min = 10,
-                  max = 30,
-                  value = 20)
+                  choices = c("black", "grey", "blue", "orange", "red"))
     ),
     
-    # Show a plot of the generated distribution
+    # Panneau central
     mainPanel(
-      plotOutput("plothist")
+      # Sortie du graphique
+      plotOutput("plothist"),
+      # Pour l'exercice...
+      hr(),
+      h3("Exercice"),
+      tags$ol(
+        tags$li("Ajouter un paramètre pour contrôler le nombre de barres de l'histogramme"),
+        tags$li("Ajout un paramètre pour choisir la variable à afficher")
+        )
     )
   )
 )
 
+#################
+### Execution ###
+#################
 shinyApp(ui = ui, server = server)
