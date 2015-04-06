@@ -6,7 +6,7 @@
 library(shiny)
 
 ### On charge les données ###
-load("data/eurosex.RData")
+load("../data/eurosex.RData")
 
 ##################
 ### Machinerie ###

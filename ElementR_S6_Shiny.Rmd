@@ -2,7 +2,10 @@
 title: "Introduction à Shiny"
 author: "R. Cura & H. Commenges"
 date: "12 mars 2015"
-output: html_document
+output:
+  html_document:
+    theme: cerulean
+    toc: yes
 runtime: shiny
 ---
 
@@ -62,7 +65,7 @@ Pour des applications plus dynamiques
 
 ```{r}
 inputPanel(
-  selectInput(inputId = "variable", label = "Variable à décrire", choices = colnames(eurosex)),
+  selectInput(inputId = "variable", label = "Variable a decrire", choices = colnames(eurosex)),
   sliderInput(inputId = "nbbreaks", label = "Nombre de barres", min = 2, max = 20, value = 5)
   )
 
