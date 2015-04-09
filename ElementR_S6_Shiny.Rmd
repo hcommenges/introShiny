@@ -3,14 +3,51 @@ title: "Introduction à Shiny"
 author: "R. Cura & H. Commenges"
 date: "12 mars 2015"
 output:
-  html_document:
-    theme: cerulean
-    toc: yes
+html_document:
+theme: cerulean
+toc: yes
 runtime: shiny
 ---
 
 
 ## 1 - Rappel sur les fonctions
+
+
+Plus de détails sur les fonctions dans le manuel [R pour les géographes](http://framabook.org/16-r-et-espace) (Chapitre 3) et sur le [blog ElementR](http://elementr.hypotheses.org/67). Dans l'exemple ci-dessous on combine dans une même fonction plusieurs traitements utiles à l'exploration d'une variable quantitative.
+
+
+```{r explofct, cache=TRUE}
+ExploreQuanti <- function(varquanti, addlines = TRUE){
+  # calcul des quartiles
+  varQuartiles <- quantile(varquanti, probs = seq(0, 1, 0.25), na.rm = TRUE)
+  
+  # combinaison des mesures de centralité et de dispersion
+  summaryVar <- c(MIN = min(varquanti, na.rm = TRUE),
+                  QUART1 = varQuartiles[2],
+                  MEDIAN = varQuartiles[3],
+                  QUART3 = varQuartiles[4],
+                  MAX = max(varquanti, na.rm = TRUE),
+                  MEAN = mean(varquanti, na.rm = TRUE),
+                  SD = sd(varquanti, na.rm = TRUE))
+  
+  summaryVar <- round(summaryVar, digits = 2)
+  
+  # affiche les résultats
+  if(addlines == TRUE){
+    hist(varquanti, breaks = 20, col = "grey30", border = "white")
+    abline(v = median(varquanti, na.rm = TRUE), col = "chocolate4", lwd = 3)
+    abline(v = mean(varquanti, na.rm = TRUE), col = "chartreuse4", lwd = 3)
+    } else {
+    hist(varquanti, breaks = 20, col = "grey30", border = "white")
+    }
+  
+  # désigne le(s) objet(s) à renvoyer en sortie
+  return(summaryVar)
+}
+
+```
+
+La fonction prend deux arguments en entrée : un vecteur numérique (varquanti) et un booléen (addlines) indiquant si la médiane et la moyenne doivent être tracés sur l'histogramme. En sortie, la fonction renvoie un vecteur de 7 valeurs contenant des mesures de centralité et de dispersion.
 
 
 ## 2 - Exploration basique des données
@@ -72,78 +109,16 @@ inputPanel(
 
 renderPlot({
   hist(x = eurosex[[input$variable]], breaks = input$nbbreaks)
-})
-```
-
-
-## 4 - Application géographique : CAH interactive avec Shiny
-
-Il faut :
-
-* Un dendrogramme
-* Les profils de classe
-* Une carte
-
-Paramètres dynamiques : 
-
-* Choix des variables à utiliser
-* Nombre de classe
-
-
-```{r, fig.show='hold', echo=FALSE, fig.width = 3}
-row.names(eurosex) <- eurosex$COUNTRYID
-
-inputPanel(
-  selectInput(inputId = "variables", label = "Variables à mobiliser", choices = colnames(eurosex), multiple = TRUE),
-  sliderInput(inputId = "nbClusters", label = "Nombre de classes", min = 2, max = 10, value = 3)
-  )
-
-cah <- reactive({
-  hclust(d = dist(subset(eurosex, select = input$variables), method = "euclidean"), method = "ward.D2")
-})
-
-clusters <- reactive({
-  cutree(tree = cah(), k = input$nbClusters)
-})
-# Dendrogramme
-renderPlot({
-  plot(cah(), hang = -1)
-})
-
-library(ggplot2)
-library(reshape2)
-plotProfiles <- function(data, clusters){
-  nClusters <- length(unique(clusters))
-  cPal <- rainbow(n = nClusters)
-  data$CLUSTER <- factor(clusters, levels = 1:nClusters, labels = paste('Cluster', 1:nClusters, sep = " "))
-  plotDF <- subset(data, select = -CLUSTER)
-  clusProfile <- aggregate(plotDF,
-                           by = list(data$CLUSTER),
-                           mean)
-  colnames(clusProfile)[1] <- "CLUSTER"
-  clusLong <- melt(clusProfile, id.vars = "CLUSTER")
-  ggplot(clusLong) +
-    geom_bar(aes(x = variable, y = value, fill = CLUSTER),
-             stat = "identity") +
-    scale_fill_manual(values = cPal) +
-    facet_wrap(~ CLUSTER) +
-    coord_flip() + theme_bw()
-  }
-
-# Profils
-renderPlot({
-  plotProfiles(subset(eurosex, select = input$variables), clusters())
-})
-
-# Carte
-renderPlot({
-  cPal <- rainbow(n = input$nbClusters)
-  countryColors <- cPal[clusters()] 
-  plot(euromap, col = countryColors)
-})
-
+  })
 ```
 
 
 ## 5 - Créer une application interactive
+
+- Travail sur l'application `App1` : personnalise ton histogramme
+- Travail sur l'application `App2` : outil interactif de classification
+
+
+
+
 
