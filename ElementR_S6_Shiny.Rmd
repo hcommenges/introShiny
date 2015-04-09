@@ -33,12 +33,10 @@ ExploreQuanti <- function(varquanti, addlines = TRUE){
   summaryVar <- round(summaryVar, digits = 2)
   
   # affiche les résultats
+  hist(varquanti, breaks = 20, col = "grey30", border = "white")
   if(addlines == TRUE){
-    hist(varquanti, breaks = 20, col = "grey30", border = "white")
     abline(v = median(varquanti, na.rm = TRUE), col = "chocolate4", lwd = 3)
     abline(v = mean(varquanti, na.rm = TRUE), col = "chartreuse4", lwd = 3)
-    } else {
-    hist(varquanti, breaks = 20, col = "grey30", border = "white")
     }
   
   # désigne le(s) objet(s) à renvoyer en sortie
